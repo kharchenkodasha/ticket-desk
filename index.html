@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Find your traffic ticket, sign your retainer and pay a flat fee online.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Northgate Ticket Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: one app shell with two views. Client side is a single narrow column (phone-first, people arrive from a mailed QR code); the firm side is a wide table + side drawer. The hero is a highway sign. */
+:root{
+  --paper:#f2f5f3; --surface:#ffffff; --sunk:#e8eeea; --ink:#13201b; --muted:#56675f; --line:#d4ddd8;
+  --sign:#0b5a3d; --sign-ink:#ffffff; --sign-edge:#e9f1ed; --filed:#0b5a3d;
+  --amber:#f0ab12; --amber-ink:#3a2700;
+  --ok:#17784a; --ok-bg:#dff1e7; --warn:#946200; --warn-bg:#fbefd2; --bad:#b42318; --bad-bg:#fbe3e0; --info:#22529e; --info-bg:#e1eaf8; --idle:#5d6b65; --idle-bg:#e7ece9;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:6px; --shadow:0 1px 2px rgba(10,30,20,.06),0 6px 24px rgba(10,30,20,.07);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0e1512; --surface:#161f1b; --sunk:#111915; --ink:#e4ebe7; --muted:#97a8a0; --line:#2a3832;
+  --sign:#0f6b49; --sign-ink:#ffffff; --sign-edge:#d6e6de; --filed:#7fdcb0;
+  --amber:#f3b631; --amber-ink:#2b1d00;
+  --ok:#5fd19a; --ok-bg:#16352a; --warn:#f0c165; --warn-bg:#3a2e12; --bad:#ff8a80; --bad-bg:#3d1916; --info:#8fb4f5; --info-bg:#1a2a45; --idle:#a3b1aa; --idle-bg:#24302b;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e1512; --surface:#161f1b; --sunk:#111915; --ink:#e4ebe7; --muted:#97a8a0; --line:#2a3832;
+  --sign:#0f6b49; --sign-ink:#ffffff; --sign-edge:#d6e6de; --filed:#7fdcb0;
+  --amber:#f3b631; --amber-ink:#2b1d00;
+  --ok:#5fd19a; --ok-bg:#16352a; --warn:#f0c165; --warn-bg:#3a2e12; --bad:#ff8a80; --bad-bg:#3d1916; --info:#8fb4f5; --info-bg:#1a2a45; --idle:#a3b1aa; --idle-bg:#24302b;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;line-height:1.05;text-wrap:balance;margin:0}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:3px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:16px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:.02em;margin-right:auto}
+.brand-mark{width:30px;height:30px;border-radius:5px;background:var(--sign);display:grid;place-items:center;box-shadow:inset 0 0 0 2px var(--sign),inset 0 0 0 3.5px var(--sign-ink)}
+.brand-mark svg{width:16px;height:16px}
+.proto{font:600 10.5px/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;border-radius:3px;background:var(--amber);color:var(--amber-ink)}
+.switch{display:flex;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:3px}
+.switch button{border:0;background:none;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:13.5px;color:var(--muted)}
+.switch button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* buttons + fields */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:var(--r);padding:11px 18px;font-weight:600;cursor:pointer;background:var(--sign);color:var(--sign-ink);transition:filter .15s,transform .05s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--sunk);filter:none}
+.btn.amber{background:var(--amber);color:var(--amber-ink)}
+.btn.sm{padding:7px 12px;font-size:13.5px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:13px;font-weight:600}
+.field .hint{font-size:12.5px;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=date],select,textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;min-height:44px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--sign);box-shadow:0 0 0 3px color-mix(in srgb,var(--sign) 22%,transparent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.err{color:var(--bad);font-size:13.5px;font-weight:500}
+
+/* client view */
+.client{max-width:760px;margin:0 auto;padding-block:28px 64px;display:flex;flex-direction:column;gap:22px}
+.sign{background:var(--sign);color:var(--sign-ink);border-radius:14px;padding:6px}
+.sign-in{border:2.5px solid var(--sign-edge);border-radius:10px;padding:26px 26px 24px;display:flex;flex-direction:column;gap:12px}
+.sign h1{font-size:clamp(38px,7vw,60px);text-transform:uppercase;letter-spacing:.015em}
+.sign p{max-width:52ch;opacity:.92;font-size:16px}
+.sign .exits{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.exit{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.03em;text-transform:uppercase;background:rgba(255,255,255,.12);border-radius:5px;padding:5px 10px}
+.exit b{background:var(--amber);color:var(--amber-ink);border-radius:3px;padding:0 6px;font-weight:700}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel h2{font-size:28px}
+.entry{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+@media (max-width:680px){.entry{grid-template-columns:1fr}}
+.qr-visual{display:flex;gap:14px;align-items:center}
+.qr-visual svg{flex:none;width:64px;height:64px}
+.samples{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-family:var(--f-mono);font-size:12px;background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:2px 7px;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--sign)}
+.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:620px){.trust{grid-template-columns:1fr}}
+.trust div{display:flex;flex-direction:column;gap:4px}
+.trust strong{font-family:var(--f-display);font-size:20px;font-weight:600}
+
+/* stepper */
+.steps{display:flex;gap:6px;list-style:none;margin:0;padding:0}
+.steps li{flex:1;display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted);min-width:0}
+.steps li::before{content:"";height:5px;border-radius:3px;background:var(--line)}
+.steps li.done::before{background:var(--sign)}
+.steps li.now{color:var(--ink)}
+.steps li.now::before{background:var(--amber)}
+.steps span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.steps li:not(.now) span{visibility:hidden}}
+
+/* ticket */
+.ticket{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.ticket-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px;background:var(--sunk);border-bottom:2px dashed var(--line)}
+.ticket-body{padding:20px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px 24px}
+@media (max-width:520px){.ticket-body{grid-template-columns:1fr}}
+.kv{display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv .v{font-weight:600}
+.kv.wide{grid-column:1/-1}
+.fee{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:16px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+.fee .big{font-family:var(--f-display);font-size:40px;font-weight:700;line-height:1}
+.countdown{display:inline-flex;align-items:center;gap:6px;background:var(--warn-bg);color:var(--warn);font-weight:600;font-size:13px;padding:4px 9px;border-radius:999px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.row.between{justify-content:space-between}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{width:18px;height:18px;margin-top:2px;accent-color:var(--sign);flex:none}
+
+/* agreement */
+.agreement{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;background:var(--sunk);font-size:14px;display:flex;flex-direction:column;gap:10px}
+.agreement h3{font-size:20px}
+.agreement mark{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inherit;padding:0 3px;border-radius:2px}
+.sigbox{position:relative;border:1px dashed var(--muted);border-radius:var(--r);background:var(--surface);height:150px;touch-action:none}
+.sigbox canvas{width:100%;height:100%;display:block;cursor:crosshair}
+.sigbox .line{position:absolute;left:18px;right:18px;bottom:34px;border-bottom:1px solid var(--line);pointer-events:none}
+.sigbox .x{position:absolute;left:18px;bottom:38px;font-family:var(--f-display);font-size:22px;color:var(--muted);pointer-events:none}
+.sigbox .ph{position:absolute;inset:auto 0 10px;text-align:center;font-size:12.5px;color:var(--muted);pointer-events:none}
+.tabs-mini{display:flex;gap:4px}
+.tabs-mini button{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:5px 10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
+.tabs-mini button[aria-pressed="true"]{border-color:var(--sign);color:var(--ink);background:var(--sunk)}
+.typed-sig{font-family:"Segoe Script","Brush Script MT","Snell Roundhand",cursive;font-size:34px;padding:22px 18px 8px;min-height:150px;display:flex;align-items:center}
+
+/* payment */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.opts{grid-template-columns:1fr}}
+.opt{border:1.5px solid var(--line);border-radius:8px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;background:var(--surface)}
+.opt:has(input:checked){border-color:var(--sign);background:color-mix(in srgb,var(--sign) 7%,var(--surface))}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt strong{font-size:16px}
+.opt .amt{font-family:var(--f-display);font-size:26px;font-weight:700}
+.summary{display:flex;flex-direction:column;gap:8px;font-size:14px}
+.summary div{display:flex;justify-content:space-between;gap:12px}
+.summary .tot{border-top:1px solid var(--line);padding-top:8px;font-weight:700;font-size:16px}
+.card-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px}
+@media (max-width:620px){.card-grid{grid-template-columns:1fr 1fr}.card-grid .field:first-child{grid-column:1/-1}}
+.secure{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+
+/* done */
+.done-mark{width:56px;height:56px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center}
+.next{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.next li{display:grid;grid-template-columns:28px 1fr;gap:12px;padding-bottom:16px;position:relative}
+.next li::before{content:"";position:absolute;left:13px;top:26px;bottom:0;width:2px;background:var(--line)}
+.next li:last-child::before{display:none}
+.next .dot{width:28px;height:28px;border-radius:50%;background:var(--sunk);border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--muted)}
+.next li.ok .dot{background:var(--sign);border-color:var(--sign);color:var(--sign-ink)}
+
+/* firm view */
+.firm{max-width:1240px;margin:0 auto;padding-block:24px 64px;display:flex;flex-direction:column;gap:20px}
+.firm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.firm-head h1{font-size:36px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .n{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12.5px;color:var(--muted)}
+.funnel{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--sunk);margin-top:6px}
+.funnel span{display:block;height:100%}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar .search{flex:1 1 240px;min-width:0;position:relative}
+.toolbar .search input{padding-left:36px}
+.toolbar .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.filters .ct{font-family:var(--f-mono);font-size:11.5px;opacity:.8}
+.table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:860px}
+th{text-align:left;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--line);background:var(--sunk);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--sunk)}
+tbody tr.sel{background:color-mix(in srgb,var(--sign) 9%,var(--surface))}
+tbody tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+.who{display:flex;flex-direction:column}
+.who small{color:var(--muted);font-size:12.5px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-mailer{background:var(--idle-bg);color:var(--idle)}
+.p-viewed{background:var(--info-bg);color:var(--info)}
+.p-signed{background:var(--warn-bg);color:var(--warn)}
+.p-paid{background:var(--ok-bg);color:var(--ok)}
+.p-filed{background:color-mix(in srgb,var(--sign) 16%,var(--surface));color:var(--filed)}
+.p-closed{background:var(--sunk);color:var(--muted)}
+.soon{color:var(--bad);font-weight:600}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(5,15,10,.35);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:21;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.15);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.drawer-head h2{font-size:28px}
+.drawer-body{overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:20px}
+.x-btn{border:1px solid var(--line);background:var(--surface);width:36px;height:36px;border-radius:6px;cursor:pointer;display:grid;place-items:center;flex:none}
+.sect{display:flex;flex-direction:column;gap:10px}
+.dl{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:14px}
+.dl dt{color:var(--muted)}
+.dl dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.timeline li{display:grid;grid-template-columns:92px 1fr;gap:10px}
+.timeline .d{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.mailer{display:grid;grid-template-columns:1fr 116px;gap:14px;border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--sunk);align-items:center}
+.mailer .qr{background:#fff;padding:6px;border-radius:4px;width:116px;height:116px}
+.mailer .qr img,.mailer .qr canvas{width:104px!important;height:104px!important}
+.mailer p{font-size:13px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:11px 16px;border-radius:8px;font-weight:500;font-size:14px;z-index:40;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fade{animation:fd .25s ease-out}
+@keyframes fd{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fade,.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+  <div class="top-in">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5v13M4 4.5h8M3 8h10M5.5 11.5h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+      Northgate Ticket Desk
+      <span class="proto">Prototype</span>
+    </div>
+    <div class="switch" role="group" aria-label="View">
+      <button id="v-client" aria-pressed="true">Client site</button>
+      <button id="v-firm" aria-pressed="false">Firm dashboard</button>
+    </div>
+  </div>
+</header>
+
+<main id="client" class="client wrap"></main>
+<main id="firm" class="firm wrap" hidden></main>
+<div id="drawer-root"></div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+/* ---------- data ---------- */
+const TODAY = new Date('2026-10-22T12:00:00');
+const FEES = {
+  speed_low:{label:'Speeding, 1–14 over',fee:149},
+  speed_high:{label:'Speeding, 15+ over',fee:249},
+  redlight:{label:'Red light / stop sign',fee:179},
+  insurance:{label:'No proof of insurance',fee:199},
+  registration:{label:'Expired registration',fee:99},
+  reckless:{label:'Reckless driving',fee:499},
+};
+const CDL_SURCHARGE = 100;
+const STATUS = {
+  mailer:{t:'Mailer sent',c:'p-mailer'},
+  viewed:{t:'Viewed case',c:'p-viewed'},
+  signed:{t:'Signed, unpaid',c:'p-signed'},
+  paid:{t:'Retained & paid',c:'p-paid'},
+  filed:{t:'Filed with court',c:'p-filed'},
+  closed:{t:'Resolved',c:'p-closed'},
+};
+const ev = (d,e)=>({d,e});
+let cases = [
+  {id:'NG-10421',code:'K7M2P9',citation:'MC-26-048213',first:'Daniel',last:'Rivera',dob:'1991-04-12',dl:'R4419208',email:'d.rivera@example.com',phone:'(555) 201-4471',address:'1180 Larkspur Ave, Maple City',type:'speed_low',violation:'Speeding: 77 mph in a 65 zone',court:'Maple County Municipal Court, Dept. 3',courtDate:'2026-11-18',fine:265,points:1,cdl:false,status:'mailer',paid:0,events:[ev('2026-10-14','Citation imported from court docket'),ev('2026-10-15','QR mailer sent')]},
+  {id:'NG-10422',code:'P3XW8D',citation:'MC-26-048377',first:'Aisha',last:'Thompson',dob:'1987-09-02',dl:'T8830122',email:'aisha.t@example.com',phone:'(555) 340-9902',address:'42 Orchard Ln, Maple City',type:'redlight',violation:'Failure to stop at red signal',court:'Maple County Municipal Court, Dept. 1',courtDate:'2026-11-05',fine:238,points:1,cdl:false,status:'viewed',paid:0,events:[ev('2026-10-12','Citation imported from court docket'),ev('2026-10-13','QR mailer sent'),ev('2026-10-19','QR scanned, case viewed')]},
+  {id:'NG-10418',code:'H6QN4T',citation:'BV-26-110920',first:'Marcus',last:'Delgado',dob:'1979-01-27',dl:'D2201934',email:'mdelgado@example.com',phone:'(555) 118-2033',address:'9 Ridge Rd, Birch Valley',type:'speed_high',violation:'Speeding: 84 mph in a 65 zone',court:'Birch Valley Justice Court',courtDate:'2026-10-29',fine:410,points:2,cdl:true,status:'signed',paid:0,events:[ev('2026-10-08','Citation imported from court docket'),ev('2026-10-09','QR mailer sent'),ev('2026-10-16','Retainer signed'),ev('2026-10-16','Payment not completed')]},
+  {id:'NG-10409',code:'B2LM7R',citation:'MC-26-047702',first:'Grace',last:'Okafor',dob:'1995-06-19',dl:'O5521780',email:'grace.okafor@example.com',phone:'(555) 772-1409',address:'301 Pine St Apt 4B, Maple City',type:'insurance',violation:'No proof of financial responsibility',court:'Maple County Municipal Court, Dept. 2',courtDate:'2026-11-12',fine:350,points:0,cdl:false,status:'paid',paid:199,events:[ev('2026-10-02','Citation imported from court docket'),ev('2026-10-03','QR mailer sent'),ev('2026-10-06','Retainer signed'),ev('2026-10-06','Paid $199.00 in full')]},
+  {id:'NG-10398',code:'Z9CK2V',citation:'BV-26-109811',first:'Tyler',last:'Brooks',dob:'2001-11-30',dl:'B7712093',email:'tbrooks01@example.com',phone:'(555) 650-3381',address:'77 Mill Creek Dr, Birch Valley',type:'reckless',violation:'Reckless driving',court:'Birch Valley Justice Court',courtDate:'2026-12-03',fine:780,points:4,cdl:false,status:'filed',paid:499,events:[ev('2026-09-24','Citation imported from court docket'),ev('2026-09-25','QR mailer sent'),ev('2026-09-28','Retainer signed'),ev('2026-09-28','Paid $499.00 in full'),ev('2026-10-01','Letter of representation filed')]},
+  {id:'NG-10433',code:'F4TR6Y',citation:'MC-26-048590',first:'Priya',last:'Natarajan',dob:'1990-03-08',dl:'N3390145',email:'priya.n@example.com',phone:'(555) 908-7714',address:'15 Cedar Ct, Maple City',type:'registration',violation:'Expired vehicle registration',court:'Maple County Municipal Court, Dept. 1',courtDate:'2026-11-24',fine:145,points:0,cdl:false,status:'mailer',paid:0,events:[ev('2026-10-20','Citation imported from court docket'),ev('2026-10-21','QR mailer sent')]},
+  {id:'NG-10385',code:'W8JD3S',citation:'MC-26-046118',first:'Luis',last:'Fernández',dob:'1984-07-14',dl:'F6605127',email:'luisf@example.com',phone:'(555) 233-5590',address:'620 Harbor Blvd, Maple City',type:'speed_low',violation:'Speeding: 42 mph in a 30 zone',court:'Maple County Municipal Court, Dept. 3',courtDate:'2026-10-15',fine:238,points:1,cdl:false,status:'closed',paid:149,events:[ev('2026-09-10','Citation imported from court docket'),ev('2026-09-11','QR mailer sent'),ev('2026-09-12','Retainer signed'),ev('2026-09-12','Paid $149.00 in full'),ev('2026-10-15','Dismissed after defensive driving')]},
+  {id:'NG-10436',code:'M5GE9K',citation:'BV-26-111204',first:'Hannah',last:'Kowalski',dob:'1998-12-05',dl:'K1180466',email:'hkowalski@example.com',phone:'(555) 441-0087',address:'8 Aspen Way, Birch Valley',type:'redlight',violation:'Failure to stop at stop sign',court:'Birch Valley Justice Court',courtDate:'2026-11-09',fine:220,points:1,cdl:false,status:'viewed',paid:0,events:[ev('2026-10-17','Citation imported from court docket'),ev('2026-10-18','QR mailer sent'),ev('2026-10-21','Looked up by citation number')]},
+];
+
+/* ---------- helpers ---------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0 = n=>'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate = d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+const shortDate = d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const daysUntil = d=>Math.round((new Date(d+'T12:00:00')-TODAY)/864e5);
+const norm = s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const todayISO = '2026-10-22';
+const feeFor = c=>FEES[c.type].fee + (c.cdl?CDL_SURCHARGE:0);
+const byId = id=>cases.find(c=>c.id===id);
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2800)}
+function log(c,e){c.events.push(ev(todayISO,e))}
+const icon = {
+  check:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  lock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="2"/></svg>',
+  x:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+};
+
+/* ---------- view switch ---------- */
+function setView(v){
+  $('#client').hidden = v!=='client'; $('#firm').hidden = v!=='firm';
+  $('#v-client').setAttribute('aria-pressed',v==='client'); $('#v-firm').setAttribute('aria-pressed',v==='firm');
+  if(v==='firm'){renderFirm()} closeDrawer(); window.scrollTo(0,0);
+}
+$('#v-client').onclick=()=>setView('client');
+$('#v-firm').onclick=()=>setView('firm');
+
+/* ---------- client flow ---------- */
+const STEPS = ['Your ticket','Your details','Agreement','Payment','Done'];
+let flow = {step:-1, caseId:null, via:null, plan:'full', sig:null};
+
+function stepper(i){
+  return `<ol class="steps" aria-label="Progress">${STEPS.map((s,k)=>`<li class="${k<i?'done':k===i?'now':''}" ${k===i?'aria-current="step"':''}><span>${s}</span></li>`).join('')}</ol>`;
+}
+function renderClient(){
+  const el=$('#client');
+  const c = byId(flow.caseId);
+  if(flow.step<0){el.innerHTML=landing();bindLanding();return}
+  el.innerHTML = stepper(flow.step) + [stepCase,stepInfo,stepAgree,stepPay,stepDone][flow.step](c);
+  el.firstElementChild.nextElementSibling?.classList.add('fade');
+  [bindCase,bindInfo,bindAgree,bindPay,bindDone][flow.step](c);
+  window.scrollTo({top:0});
+}
+function go(step){flow.step=step;renderClient()}
+
+function landing(){
+  return `
+  <section class="sign" aria-labelledby="hero-h">
+    <div class="sign-in">
+      <div class="exits"><span class="exit"><b>EXIT 5</b> minutes</span><span class="exit">No office visit</span></div>
+      <h1 id="hero-h">Got a traffic ticket? Hire your lawyer right here.</h1>
+      <p>Find your case, sign your agreement and pay a flat fee from your phone. In most cases you never have to go to court.</p>
+    </div>
+  </section>
+  <div class="entry">
+    <form class="panel" id="lookup" novalidate>
+      <div><h2>Find your case</h2><p class="muted">Use the citation number printed at the top of your ticket.</p></div>
+      <div class="field"><label for="f-cit">Citation number</label><input id="f-cit" type="text" class="mono" placeholder="MC-26-048213" autocomplete="off" required></div>
+      <div class="field"><label for="f-last">Last name</label><input id="f-last" type="text" placeholder="As shown on the ticket" autocomplete="family-name" required></div>
+      <p class="err" id="lk-err" hidden></p>
+      <button class="btn" type="submit">Find my case</button>
+      <div class="samples">Demo tickets: ${cases.filter(c=>['mailer','viewed'].includes(c.status)).slice(0,3).map(c=>`<button type="button" class="chip" data-cit="${c.citation}" data-last="${esc(c.last)}">${c.citation} · ${esc(c.last)}</button>`).join('')}</div>
+    </form>
+    <form class="panel" id="qrform" novalidate>
+      <div class="qr-visual">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="6" fill="var(--sunk)"/><g fill="var(--ink)"><rect x="8" y="8" width="16" height="16" rx="2"/><rect x="40" y="8" width="16" height="16" rx="2"/><rect x="8" y="40" width="16" height="16" rx="2"/><rect x="12" y="12" width="8" height="8" fill="var(--sunk)"/><rect x="44" y="12" width="8" height="8" fill="var(--sunk)"/><rect x="12" y="44" width="8" height="8" fill="var(--sunk)"/><rect x="30" y="30" width="5" height="5"/><rect x="40" y="40" width="5" height="5"/><rect x="48" y="46" width="8" height="5"/><rect x="30" y="44" width="5" height="12"/><rect x="40" y="30" width="16" height="4"/></g></svg>
+        <div><h2 style="font-size:24px">Got our letter?</h2><p class="muted" style="font-size:14px">Scan the QR code with your phone camera. It opens your case with everything filled in.</p></div>
+      </div>
+      <div class="field"><label for="f-code">Or type the 6-character code under the QR</label><input id="f-code" type="text" class="mono" maxlength="7" placeholder="K7M2P9" autocomplete="off" style="text-transform:uppercase;letter-spacing:.15em"></div>
+      <p class="err" id="qr-err" hidden></p>
+      <button class="btn ghost" type="submit">Open my case</button>
+    </form>
+  </div>
+  <section class="panel">
+    <div class="trust">
+      <div><span class="label">Flat fee</span><strong>From $99, shown up front</strong><p class="muted" style="font-size:14px">The price is set by your violation. Nothing is added later.</p></div>
+      <div><span class="label">Your record</span><strong>We fight to keep points off</strong><p class="muted" style="font-size:14px">Dismissals, reductions and defensive-driving options.</p></div>
+      <div><span class="label">Questions</span><strong>A real attorney, on call</strong><p class="muted" style="font-size:14px">You can sign up alone, but help is there if you want it.</p></div>
+    </div>
+  </section>`;
+}
+function bindLanding(){
+  $('#lookup').onsubmit=e=>{
+    e.preventDefault();
+    const cit=norm($('#f-cit').value), last=norm($('#f-last').value), err=$('#lk-err');
+    if(!cit||!last){err.textContent='Enter both your citation number and last name.';err.hidden=false;return}
+    const c=cases.find(x=>norm(x.citation)===cit && norm(x.last)===last);
+    if(!c){err.textContent='We could not find that ticket. Check the number on your citation, or try again in 1–2 business days if you got it recently.';err.hidden=false;return}
+    startCase(c,'Looked up by citation number');
+  };
+  $('#qrform').onsubmit=e=>{
+    e.preventDefault();
+    const code=norm($('#f-code').value), err=$('#qr-err');
+    const c=cases.find(x=>x.code===code);
+    if(!c){err.textContent='That code does not match a letter. It is 6 letters and numbers, printed under the QR code.';err.hidden=false;return}
+    startCase(c,'QR scanned, case viewed');
+  };
+  document.querySelectorAll('.chip[data-cit]').forEach(b=>b.onclick=()=>{$('#f-cit').value=b.dataset.cit;$('#f-last').value=b.dataset.last;$('#f-cit').focus()});
+}
+function startCase(c,how){
+  if(c.status==='paid'||c.status==='filed'||c.status==='closed'){
+    flow={step:4,caseId:c.id,via:how,plan:'full',sig:null}; renderClient(); return;
+  }
+  if(c.status==='mailer'){c.status='viewed'}
+  log(c,how);
+  flow={step:0,caseId:c.id,via:how,plan:'full',sig:null}; renderClient();
+}
+
+function stepCase(c){
+  const d=daysUntil(c.courtDate);
+  return `
+  <div class="row between"><div><h2 style="font-size:32px">Is this your ticket?</h2><p class="muted">We matched this from the court’s records${flow.via?.startsWith('QR')?' using the code on your letter':''}.</p></div></div>
+  <article class="ticket">
+    <div class="ticket-head"><div><span class="label">Citation</span><div class="mono" style="font-size:18px;font-weight:600">${c.citation}</div></div>${d>0?`<span class="countdown">Court date in ${d} day${d===1?'':'s'}</span>`:''}</div>
+    <div class="ticket-body">
+      <div class="kv"><span class="label">Driver</span><span class="v">${esc(c.first)} ${esc(c.last)}</span></div>
+      <div class="kv"><span class="label">License no.</span><span class="v mono">•••${c.dl.slice(-4)}</span></div>
+      <div class="kv wide"><span class="label">Violation</span><span class="v">${esc(c.violation)}</span></div>
+      <div class="kv"><span class="label">Court</span><span class="v">${esc(c.court)}</span></div>
+      <div class="kv"><span class="label">Court date</span><span class="v">${fmtDate(c.courtDate)}</span></div>
+      <div class="kv"><span class="label">Fine if you just pay it</span><span class="v">${money0(c.fine)} + ${c.points} point${c.points===1?'':'s'} on your record</span></div>
+      <div class="kv"><span class="label">Fee category</span><span class="v">${FEES[c.type].label}</span></div>
+    </div>
+    <div class="fee"><div><span class="label">Our flat fee</span><div class="big">${money0(feeFor(c))}</div><span class="muted" style="font-size:13px">Includes court appearance. ${c.cdl?'Includes CDL handling.':'Split into 2 payments if you like.'}</span></div>
+    <div class="row"><button class="btn ghost" id="notmine">Not my ticket</button><button class="btn" id="yes">Yes, this is mine</button></div></div>
+  </article>`;
+}
+function bindCase(c){
+  $('#yes').onclick=()=>go(1);
+  $('#notmine').onclick=()=>{flow.step=-1;renderClient();toast('No problem. Try your citation number again.')};
+}
+
+function stepInfo(c){
+  return `
+  <form class="panel" id="info" novalidate>
+    <div><h2>Confirm your details</h2><p class="muted">We filled in what the court gave us. Fix anything that’s out of date.</p></div>
+    <div class="grid2">
+      <div class="field"><label for="i-first">First name</label><input id="i-first" type="text" value="${esc(c.first)}" autocomplete="given-name" required></div>
+      <div class="field"><label for="i-last">Last name</label><input id="i-last" type="text" value="${esc(c.last)}" autocomplete="family-name" required></div>
+      <div class="field"><label for="i-email">Email</label><input id="i-email" type="email" value="${esc(c.email)}" autocomplete="email" required><span class="hint">Your signed agreement and receipt go here.</span></div>
+      <div class="field"><label for="i-phone">Mobile phone</label><input id="i-phone" type="tel" value="${esc(c.phone)}" autocomplete="tel" required><span class="hint">Court reminders by text.</span></div>
+      <div class="field" style="grid-column:1/-1"><label for="i-addr">Mailing address</label><input id="i-addr" type="text" value="${esc(c.address)}" autocomplete="street-address" required></div>
+      <div class="field"><label for="i-dob">Date of birth</label><input id="i-dob" type="date" value="${c.dob}" required></div>
+      <div class="field"><label for="i-dl">Driver’s license number</label><input id="i-dl" type="text" class="mono" value="${esc(c.dl)}" required></div>
+    </div>
+    <label class="check"><input type="checkbox" id="i-cdl" ${c.cdl?'checked':''}><span><strong>I hold a commercial driver’s license (CDL)</strong><br><span class="muted">CDL tickets have stricter rules, so we handle them differently. Adds ${money0(CDL_SURCHARGE)}.</span></span></label>
+    <p class="err" id="in-err" hidden></p>
+    <div class="row between"><button type="button" class="btn ghost" id="back">Back</button><button class="btn" type="submit">Continue to agreement</button></div>
+  </form>`;
+}
+function bindInfo(c){
+  $('#back').onclick=()=>go(0);
+  $('#info').onsubmit=e=>{
+    e.preventDefault();
+    const v=id=>$('#'+id).value.trim();
+    const miss=['i-first','i-last','i-email','i-phone','i-addr','i-dob','i-dl'].filter(id=>!v(id));
+    if(miss.length){$('#in-err').textContent='Fill in every field so we can represent you.';$('#in-err').hidden=false;$('#'+miss[0]).focus();return}
+    if(!/^\S+@\S+\.\S+$/.test(v('i-email'))){$('#in-err').textContent='That email address looks incomplete.';$('#in-err').hidden=false;$('#i-email').focus();return}
+    Object.assign(c,{first:v('i-first'),last:v('i-last'),email:v('i-email'),phone:v('i-phone'),address:v('i-addr'),dob:v('i-dob'),dl:v('i-dl'),cdl:$('#i-cdl').checked});
+    go(2);
+  };
+}
+
+function stepAgree(c){
+  const fee=feeFor(c);
+  return `
+  <section class="panel">
+    <div><h2>Review and sign your agreement</h2><p class="muted">This is the contract that makes us your lawyers for this ticket. Highlighted parts are filled in from your case.</p></div>
+    <div class="agreement" tabindex="0" aria-label="Retainer agreement text">
+      <h3>Attorney–Client Retainer Agreement</h3>
+      <p class="muted" style="font-size:12.5px">Sample text for this prototype. The firm supplies the final wording.</p>
+      <p><strong>1. Parties.</strong> This agreement is between Northgate Ticket Defense (“the Firm”) and <mark>${esc(c.first)} ${esc(c.last)}</mark> (“Client”).</p>
+      <p><strong>2. Scope.</strong> The Firm will represent Client on citation <mark class="mono">${c.citation}</mark>, <mark>${esc(c.violation)}</mark>, pending in <mark>${esc(c.court)}</mark>. This includes filing a notice of appearance, reviewing evidence, negotiating with the prosecutor and appearing at hearings for this citation. It does not include trial de novo, appeals, license suspension hearings or any other citation.</p>
+      <p><strong>3. Fee.</strong> Client agrees to a flat fee of <mark>${money(fee)}</mark>${c.cdl?', including CDL handling':''}. The fee is earned when the Firm files its notice of appearance. Court fines, court costs and defensive-driving course fees are separate and paid by Client.</p>
+      <p><strong>4. No guarantee.</strong> The Firm will work for the best result available, such as dismissal, deferral or a reduced charge. The Firm cannot guarantee any outcome.</p>
+      <p><strong>5. Client duties.</strong> Client will keep contact details current, respond to messages within 3 business days and complete any course or document the court requires.</p>
+      <p><strong>6. Ending representation.</strong> Client may end this agreement at any time in writing. If the Firm has not yet filed a notice of appearance, the fee is refunded in full.</p>
+      <p><strong>7. Electronic signature.</strong> Client agrees that signing below has the same effect as a handwritten signature.</p>
+    </div>
+    <div class="row between"><span class="label">Your signature</span>
+      <div class="tabs-mini" role="group" aria-label="Signature method"><button type="button" id="sm-draw" aria-pressed="true">Draw</button><button type="button" id="sm-type" aria-pressed="false">Type</button></div>
+    </div>
+    <div class="sigbox" id="sigbox"><canvas id="sig" aria-label="Draw your signature"></canvas><span class="x">×</span><span class="line"></span><span class="ph" id="sig-ph">Sign with your finger or mouse</span></div>
+    <div id="typedwrap" hidden><div class="field"><label for="typed">Type your full legal name</label><input id="typed" type="text" value="${esc(c.first)} ${esc(c.last)}"></div><div class="sigbox"><div class="typed-sig" id="typedprev">${esc(c.first)} ${esc(c.last)}</div><span class="line"></span></div></div>
+    <div class="row"><button type="button" class="btn ghost sm" id="clear">Clear signature</button><span class="muted" style="font-size:13px">Signed ${fmtDate(todayISO)} · IP and timestamp recorded</span></div>
+    <label class="check"><input type="checkbox" id="agree"><span>I have read this agreement and I hire Northgate Ticket Defense to represent me on this citation.</span></label>
+    <p class="err" id="ag-err" hidden></p>
+    <div class="row between"><button type="button" class="btn ghost" id="back">Back</button><button class="btn" id="sign">Sign and continue</button></div>
+  </section>`;
+}
+function bindAgree(c){
+  let mode='draw', drawn=false;
+  const cv=$('#sig'), box=$('#sigbox'), ctx=cv.getContext('2d');
+  const size=()=>{const r=box.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=getComputedStyle(document.body).color};
+  size();
+  let down=false,last=null;
+  const pt=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  cv.onpointerdown=e=>{down=true;last=pt(e);cv.setPointerCapture(e.pointerId);$('#sig-ph').hidden=true};
+  cv.onpointermove=e=>{if(!down)return;const p=pt(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;drawn=true};
+  cv.onpointerup=cv.onpointercancel=()=>down=false;
+  $('#clear').onclick=()=>{ctx.clearRect(0,0,cv.width,cv.height);drawn=false;$('#sig-ph').hidden=false;$('#typed').value=''; $('#typedprev').textContent=''};
+  const setMode=m=>{mode=m;$('#sm-draw').setAttribute('aria-pressed',m==='draw');$('#sm-type').setAttribute('aria-pressed',m==='type');box.hidden=m!=='draw';$('#typedwrap').hidden=m!=='type';if(m==='draw')size()};
+  $('#sm-draw').onclick=()=>setMode('draw'); $('#sm-type').onclick=()=>setMode('type');
+  $('#typed').oninput=e=>$('#typedprev').textContent=e.target.value;
+  $('#back').onclick=()=>go(1);
+  $('#sign').onclick=()=>{
+    const err=$('#ag-err');
+    const hasSig = mode==='draw'?drawn:$('#typed').value.trim().length>2;
+    if(!hasSig){err.textContent=mode==='draw'?'Draw your signature in the box above.':'Type your full name to sign.';err.hidden=false;return}
+    if(!$('#agree').checked){err.textContent='Check the box to confirm you agree.';err.hidden=false;return}
+    if(c.status!=='signed'){c.status='signed';log(c,`Retainer signed (${mode==='draw'?'drawn':'typed'} signature)`)}
+    go(3);
+  };
+}
+
+function stepPay(c){
+  const fee=feeFor(c), half=fee/2;
+  return `
+  <form class="panel" id="pay" novalidate>
+    <div><h2>Pay your flat fee</h2><p class="muted">Once payment goes through, we file with the court and you’re covered.</p></div>
+    <div class="opts" role="radiogroup" aria-label="Payment plan">
+      <label class="opt"><input type="radio" name="plan" value="full" ${flow.plan==='full'?'checked':''}><span class="label">Pay in full</span><span class="amt">${money(fee)}</span><span class="muted" style="font-size:13px">One payment today</span></label>
+      <label class="opt"><input type="radio" name="plan" value="split" ${flow.plan==='split'?'checked':''}><span class="label">2 payments</span><span class="amt">${money(half)} today</span><span class="muted" style="font-size:13px">Then ${money(half)} in 30 days</span></label>
+    </div>
+    <div class="summary">
+      <div><span>${FEES[c.type].label}</span><span class="mono">${money(FEES[c.type].fee)}</span></div>
+      ${c.cdl?`<div><span>CDL handling</span><span class="mono">${money(CDL_SURCHARGE)}</span></div>`:''}
+      <div class="tot"><span>Due today</span><span class="mono" id="due">${money(flow.plan==='full'?fee:half)}</span></div>
+    </div>
+    <div class="card-grid">
+      <div class="field"><label for="p-num">Card number</label><input id="p-num" type="text" inputmode="numeric" class="mono" value="4242 4242 4242 4242" autocomplete="cc-number"></div>
+      <div class="field"><label for="p-exp">Expiry</label><input id="p-exp" type="text" inputmode="numeric" class="mono" value="08 / 29" autocomplete="cc-exp"></div>
+      <div class="field"><label for="p-cvc">CVC</label><input id="p-cvc" type="text" inputmode="numeric" class="mono" value="123" maxlength="4" autocomplete="cc-csc"></div>
+      <div class="field"><label for="p-zip">ZIP</label><input id="p-zip" type="text" inputmode="numeric" class="mono" value="40210" maxlength="5" autocomplete="postal-code"></div>
+    </div>
+    <p class="secure">${icon.lock} Test card prefilled. In production this is a Stripe or LawPay field, and card data never touches our servers.</p>
+    <p class="err" id="pay-err" hidden></p>
+    <div class="row between"><button type="button" class="btn ghost" id="back">Back</button><button class="btn amber" type="submit" id="paybtn">Pay ${money(flow.plan==='full'?fee:half)}</button></div>
+  </form>`;
+}
+function bindPay(c){
+  const fee=feeFor(c);
+  document.querySelectorAll('input[name=plan]').forEach(r=>r.onchange=()=>{flow.plan=r.value;const due=flow.plan==='full'?fee:fee/2;$('#due').textContent=money(due);$('#paybtn').textContent='Pay '+money(due)});
+  $('#p-num').oninput=e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim()};
+  $('#back').onclick=()=>go(2);
+  $('#pay').onsubmit=e=>{
+    e.preventDefault();
+    const n=$('#p-num').value.replace(/\D/g,'');
+    if(n.length<15){$('#pay-err').textContent='Card number is too short. Check the 16 digits on the front of your card.';$('#pay-err').hidden=false;return}
+    const b=$('#paybtn'); b.disabled=true; b.innerHTML='<span class="spin"></span> Processing';
+    setTimeout(()=>{
+      const amt=flow.plan==='full'?fee:fee/2;
+      c.paid+=amt; c.status='paid'; c.plan=flow.plan;
+      log(c,`Paid ${money(amt)}${flow.plan==='split'?' (1 of 2)':' in full'} by card ••${n.slice(-4)}`);
+      go(4);
+    },1200);
+  };
+}
+
+function stepDone(c){
+  const already=!c.events.some(e=>e.d===todayISO && e.e.startsWith('Paid'));
+  return `
+  <section class="panel" style="align-items:flex-start">
+    <span class="done-mark">${icon.check}</span>
+    <h2 style="font-size:34px">${already?'You’re already covered':'You’re hired. We’ve got it from here.'}</h2>
+    <p class="muted" style="max-width:56ch">${already?'This ticket is already handled by our team. Here is where it stands.':`We sent your signed agreement and receipt to <strong style="color:var(--ink)">${esc(c.email)}</strong>. You do not need to go to court on ${fmtDate(c.courtDate)} unless we tell you to.`}</p>
+    <div class="dl" style="width:100%">
+      <dt>Case number</dt><dd class="mono">${c.id}</dd>
+      <dt>Citation</dt><dd class="mono">${c.citation}</dd>
+      <dt>Paid</dt><dd>${money(c.paid)} of ${money(feeFor(c))}${c.plan==='split'&&c.paid<feeFor(c)?` · next ${money(feeFor(c)/2)} on ${shortDate('2026-11-21')}`:''}</dd>
+    </div>
+    <div style="width:100%"><span class="label">What happens next</span></div>
+    <ol class="next">
+      <li class="ok"><span class="dot">✓</span><div><strong>Agreement signed and fee paid</strong><p class="muted" style="font-size:14px">Today</p></div></li>
+      <li class="${c.status==='filed'||c.status==='closed'?'ok':''}"><span class="dot">${c.status==='filed'||c.status==='closed'?'✓':'2'}</span><div><strong>We file a notice of appearance</strong><p class="muted" style="font-size:14px">Within 1 business day. The court now contacts us, not you.</p></div></li>
+      <li class="${c.status==='closed'?'ok':''}"><span class="dot">${c.status==='closed'?'✓':'3'}</span><div><strong>We negotiate with the prosecutor</strong><p class="muted" style="font-size:14px">We text you if there is anything you need to do, like a driving course.</p></div></li>
+      <li class="${c.status==='closed'?'ok':''}"><span class="dot">${c.status==='closed'?'✓':'4'}</span><div><strong>You get the result</strong><p class="muted" style="font-size:14px">By ${fmtDate(c.courtDate)} or soon after.</p></div></li>
+    </ol>
+    <div class="row"><button class="btn ghost" id="restart">Look up another ticket</button><button class="btn" id="seefirm">See it in the firm dashboard</button></div>
+  </section>`;
+}
+function bindDone(c){
+  $('#restart').onclick=()=>{flow={step:-1};renderClient()};
+  $('#seefirm').onclick=()=>{setView('firm');openDrawer(c.id)};
+}
+
+/* ---------- firm dashboard ---------- */
+let firm = {q:'', f:'all', sel:null};
+function renderFirm(){
+  const el=$('#firm');
+  const count=s=>cases.filter(c=>c.status===s).length;
+  const open=count('mailer')+count('viewed');
+  const collected=cases.reduce((a,c)=>a+c.paid,0);
+  const pipeline=cases.filter(c=>['viewed','signed'].includes(c.status)).reduce((a,c)=>a+feeFor(c),0);
+  const urgent=cases.filter(c=>!['paid','filed','closed'].includes(c.status) && daysUntil(c.courtDate)>=0 && daysUntil(c.courtDate)<=14).length;
+  const total=cases.length;
+  const seg=(s,col)=>`<span style="width:${count(s)/total*100}%;background:${col}" title="${STATUS[s].t}: ${count(s)}"></span>`;
+  const filters=[['all','All',total],['mailer','Mailer sent',count('mailer')],['viewed','Viewed',count('viewed')],['signed','Signed, unpaid',count('signed')],['paid','Paid',count('paid')],['filed','Filed',count('filed')],['closed','Resolved',count('closed')]];
+  el.innerHTML=`
+  <div class="firm-head">
+    <div><span class="label">Northgate Ticket Defense · Case desk</span><h1>Cases</h1></div>
+    <div class="row"><button class="btn ghost sm" id="import">Import court docket</button><button class="btn sm" id="batch">Print mailer batch (${count('mailer')})</button></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span class="label">Leads not yet signed</span><span class="n">${open}</span><span class="s">Mailers out and cases viewed</span>
+      <div class="funnel" aria-hidden="true">${seg('mailer','var(--idle)')}${seg('viewed','var(--info)')}${seg('signed','var(--warn)')}${seg('paid','var(--ok)')}${seg('filed','var(--sign)')}${seg('closed','var(--line)')}</div></div>
+    <div class="kpi"><span class="label">Need follow-up</span><span class="n" style="color:var(--bad)">${count('signed')}</span><span class="s">Signed but not paid</span></div>
+    <div class="kpi"><span class="label">Court in ≤14 days, unretained</span><span class="n">${urgent}</span><span class="s">Send a reminder text</span></div>
+    <div class="kpi"><span class="label">Collected · October</span><span class="n">${money0(collected)}</span><span class="s">${money0(pipeline)} more in open pipeline</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search">${icon.search}<input id="q" type="text" placeholder="Search name, citation or case number" value="${esc(firm.q)}" aria-label="Search cases"></div>
+    <div class="filters" role="group" aria-label="Filter by status">${filters.map(([k,l,n])=>`<button data-f="${k}" aria-pressed="${firm.f===k}">${l} <span class="ct">${n}</span></button>`).join('')}</div>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Client</th><th>Citation</th><th>Violation</th><th>Court date</th><th>Status</th><th class="num">Fee</th><th class="num">Paid</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>`;
+  renderRows();
+  $('#q').oninput=e=>{firm.q=e.target.value;renderRows()};
+  el.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{firm.f=b.dataset.f;el.querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderRows()});
+  $('#import').onclick=importDocket;
+  $('#batch').onclick=()=>toast(`${count('mailer')} mailers queued as a print-ready PDF with unique QR codes.`);
+}
+function renderRows(){
+  const q=norm(firm.q);
+  const list=cases.filter(c=>(firm.f==='all'||c.status===firm.f)&&(!q||norm(c.first+c.last+c.citation+c.id).includes(q)))
+    .sort((a,b)=>a.courtDate.localeCompare(b.courtDate));
+  $('#rows').innerHTML = list.length? list.map(c=>{
+    const d=daysUntil(c.courtDate), unretained=!['paid','filed','closed'].includes(c.status);
+    return `<tr data-id="${c.id}" tabindex="0" class="${firm.sel===c.id?'sel':''}">
+      <td><div class="who"><strong>${esc(c.first)} ${esc(c.last)}</strong><small class="mono">${c.id}${c.cdl?' · CDL':''}</small></div></td>
+      <td class="mono">${c.citation}</td>
+      <td>${FEES[c.type].label}</td>
+      <td class="${unretained&&d>=0&&d<=14?'soon':''}">${shortDate(c.courtDate)}${d>=0?` <span class="muted" style="font-weight:400">· ${d}d</span>`:''}</td>
+      <td><span class="pill ${STATUS[c.status].c}">${STATUS[c.status].t}</span></td>
+      <td class="num mono">${money0(feeFor(c))}</td>
+      <td class="num mono">${c.paid?money0(c.paid):'–'}</td></tr>`}).join('')
+    : `<tr><td colspan="7" class="empty">No cases match. Clear the search or pick another status.</td></tr>`;
+  document.querySelectorAll('#rows tr[data-id]').forEach(tr=>{tr.onclick=()=>openDrawer(tr.dataset.id);tr.onkeydown=e=>{if(e.key==='Enter')openDrawer(tr.dataset.id)}});
+}
+function importDocket(){
+  const n={id:'NG-10441',code:'R2VN8C',citation:'MC-26-048702',first:'Jordan',last:'Ellis',dob:'1993-02-21',dl:'E9031127',email:'',phone:'',address:'204 Willow St, Maple City',type:'speed_high',violation:'Speeding: 58 mph in a 40 zone',court:'Maple County Municipal Court, Dept. 2',courtDate:'2026-12-01',fine:395,points:2,cdl:false,status:'mailer',paid:0,events:[ev(todayISO,'Citation imported from court docket'),ev(todayISO,'QR mailer queued')]};
+  if(byId(n.id)){toast('Docket is up to date. No new citations since this morning.');return}
+  cases.push(n); renderFirm(); toast('Imported 1 new citation from today’s docket and queued a mailer.');
+}
+function openDrawer(id){
+  const c=byId(id); if(!c)return; firm.sel=id;
+  document.querySelectorAll('#rows tr').forEach(tr=>tr.classList.toggle('sel',tr.dataset.id===id));
+  const url=`https://northgate.example/c/${c.code}`;
+  $('#drawer-root').innerHTML=`
+  <div class="scrim" id="scrim"></div>
+  <aside class="drawer fade" role="dialog" aria-modal="true" aria-labelledby="dh">
+    <div class="drawer-head"><div><span class="label mono">${c.id} · ${c.citation}</span><h2 id="dh">${esc(c.first)} ${esc(c.last)}</h2><span class="pill ${STATUS[c.status].c}" style="margin-top:6px">${STATUS[c.status].t}</span></div><button class="x-btn" id="dclose" aria-label="Close">${icon.x}</button></div>
+    <div class="drawer-body">
+      <div class="sect"><span class="label">Case</span>
+        <dl class="dl">
+          <dt>Violation</dt><dd>${esc(c.violation)}</dd>
+          <dt>Court</dt><dd>${esc(c.court)}</dd>
+          <dt>Court date</dt><dd>${fmtDate(c.courtDate)}</dd>
+          <dt>Fine / points</dt><dd>${money0(c.fine)} · ${c.points} pt${c.points===1?'':'s'}</dd>
+          <dt>Flat fee</dt><dd>${money(feeFor(c))}${c.cdl?' (incl. CDL)':''}</dd>
+          <dt>Paid</dt><dd>${money(c.paid)}${c.paid&&c.paid<feeFor(c)?' · balance '+money(feeFor(c)-c.paid):''}</dd>
+        </dl></div>
+      <div class="sect"><span class="label">Contact</span>
+        <dl class="dl"><dt>Email</dt><dd>${esc(c.email)||'<span class="muted">Not provided yet</span>'}</dd><dt>Phone</dt><dd>${esc(c.phone)||'<span class="muted">Not provided yet</span>'}</dd><dt>Address</dt><dd>${esc(c.address)}</dd><dt>License</dt><dd class="mono">${esc(c.dl)}</dd></dl></div>
+      <div class="sect"><label class="label" for="d-status">Move to stage</label>
+        <div class="row"><select id="d-status" style="flex:1;min-width:0">${Object.entries(STATUS).map(([k,s])=>`<option value="${k}" ${k===c.status?'selected':''}>${s.t}</option>`).join('')}</select><button class="btn ghost sm" id="remind">Text reminder</button></div></div>
+      <div class="sect"><span class="label">Mailer QR</span>
+        <div class="mailer"><div><p><strong>Letter code <span class="mono">${c.code}</span></strong></p><p class="muted mono" style="overflow-wrap:anywhere">${url}</p><p class="muted" style="margin-top:6px">Unique to this citation. Scanning opens the client’s case with details filled in.</p><button class="btn sm" id="simscan" style="margin-top:10px">Simulate a scan</button></div><div class="qr" id="qr" aria-label="QR code for ${c.code}"></div></div></div>
+      <div class="sect"><span class="label">Activity</span>
+        <ul class="timeline">${[...c.events].reverse().map(e=>`<li><span class="d">${shortDate(e.d)}</span><span>${esc(e.e)}</span></li>`).join('')}</ul></div>
+      <div class="sect"><label class="label" for="d-note">Internal note</label><textarea id="d-note" rows="3" placeholder="Visible to staff only"></textarea><div class="row end"><button class="btn ghost sm" id="savenote">Save note</button></div></div>
+    </div>
+  </aside>`;
+  try{ if(window.QRCode){ new QRCode($('#qr'),{text:url,width:104,height:104,colorDark:'#13201b',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M}) } else { $('#qr').textContent=c.code } }catch(e){ $('#qr').textContent=c.code }
+  $('#dclose').onclick=closeDrawer; $('#scrim').onclick=closeDrawer;
+  $('#d-status').onchange=e=>{c.status=e.target.value;log(c,`Stage changed to “${STATUS[c.status].t}”`);renderFirm();openDrawer(c.id);toast('Stage updated.')};
+  $('#remind').onclick=()=>{log(c,'Reminder text sent');openDrawer(c.id);toast(`Reminder text queued to ${c.phone||'the number on file'}.`)};
+  $('#savenote').onclick=()=>{const t=$('#d-note').value.trim();if(!t){toast('Write a note first.');return}log(c,'Note: '+t);openDrawer(c.id);toast('Note saved.')};
+  $('#simscan').onclick=()=>{setView('client');startCase(c,'QR scanned, case viewed')};
+  $('#dclose').focus();
+}
+function closeDrawer(){$('#drawer-root').innerHTML='';firm.sel=null;document.querySelectorAll('#rows tr.sel').forEach(t=>t.classList.remove('sel'))}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+
+/* ---------- boot: a QR link carries the letter code in the hash, e.g. #K7M2P9 ---------- */
+renderClient();
+(function(){
+  const h=norm(location.hash.slice(1));
+  if(h==='FIRM'){setView('firm');return}
+  const c=cases.find(x=>x.code===h); if(c) startCase(c,'QR scanned, case viewed');
+})();
+</script>
+</body>
+</html>
